@@ -1,0 +1,62 @@
+#import <UIKit/UIKit.h>
+
+// 声明我们要钩挂的系统类
+@interface SBLockScreenViewController : UIViewController
+@property (nonatomic, retain) UIView *interactiveWallpaperContainer;
+- (void)handlePan:(UIPanGestureRecognizer *)recognizer;
+@end
+
+%hook SBLockScreenViewController
+
+// 使用 %property 给系统类动态添加我们自己的变量
+%property (nonatomic, retain) UIView *interactiveWallpaperContainer;
+
+- (void)viewDidLoad {
+    %orig; // 先执行系统原本的 viewDidLoad
+
+    // 1. 创建我们的壁纸容器视图
+    self.interactiveWallpaperContainer = [[UIView alloc] initWithFrame:self.view.bounds];
+    self.interactiveWallpaperContainer.backgroundColor = [UIColor clearColor];
+    self.interactiveWallpaperContainer.userInteractionEnabled = YES; 
+    [self.view addSubview:self.interactiveWallpaperContainer];
+
+    // 2. 从本地读取测试图片 (等会记得把图片放过来)
+    UIImageView *bgView = [[UIImageView alloc] initWithFrame:self.interactiveWallpaperContainer.bounds];
+    bgView.image = [UIImage imageWithContentsOfFile:@"/var/mobile/test.png"];
+    bgView.contentMode = UIViewContentModeScaleAspectFill;
+    [self.interactiveWallpaperContainer addSubview:bgView];
+
+    // 3. 给锁屏注入我们的自定义滑动手势
+    UIPanGestureRecognizer *panGesture = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handlePan:)];
+    [self.view addGestureRecognizer:panGesture];
+}
+
+%new
+- (void)handlePan:(UIPanGestureRecognizer *)recognizer {
+    CGPoint translation = [recognizer translationInView:self.view];
+    CGFloat screenWidth = self.view.bounds.size.width;
+    
+    // 计算滑动百分比 (向右滑为正数)
+    CGFloat percentage = translation.x / screenWidth;
+    if (percentage < 0) percentage = 0;
+    if (percentage > 1) percentage = 1;
+
+    if (recognizer.state == UIGestureRecognizerStateChanged) {
+        // 【手势改变中】随着滑动，让“格局”壁纸渐渐变透明，露出底下的桌面
+        self.interactiveWallpaperContainer.alpha = 1.0f - percentage;
+        
+    } else if (recognizer.state == UIGestureRecognizerStateEnded) {
+        // 【手势释放】如果滑动超过了 40%，就彻底划开它
+        if (percentage > 0.4f) {
+            [UIView animateWithDuration:0.3 animations:^{
+                self.interactiveWallpaperContainer.alpha = 0.0f;
+            }];
+        } else {
+            // 滑动不够，弹回原状
+            [UIView animateWithDuration:0.3 animations:^{
+                self.interactiveWallpaperContainer.alpha = 1.0f;
+            }];
+        }
+    }
+}
+%end
