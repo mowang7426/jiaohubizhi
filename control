@@ -1,0 +1,9 @@
+Package: com.yourname.jiaohubizhi
+Name: jiaohubizhi
+Depends: mobilesubstrate
+Version: 0.0.1
+Architecture: iphoneos-arm64
+Description: My Interactive Wallpaper Tweak
+Maintainer: YourName
+Author: YourName
+Section: Tweaks
