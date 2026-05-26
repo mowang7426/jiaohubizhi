@@ -1,0 +1,30 @@
+name: Build Tweak
+on: [push, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Dependencies
+        run: |
+          brew install lz4 xz
+
+      - name: Install Theos & SDKs
+        run: |
+          bash -c "$(curl -fsSL https://raw.githubusercontent.com/theos/theos/master/bin/install-theos)"
+          echo "THEOS=$HOME/theos" >> $GITHUB_ENV
+          git clone https://github.com/theos/sdks.git $HOME/theos/sdks
+
+      - name: Build Package
+        run: |
+          # 强行为你的 Roothide 越狱编译标准的无根通用包
+          make package THEOS_PACKAGE_SCHEME=rootless
+          
+      - name: Upload DEB
+        uses: actions/artifact@v3
+        with:
+          name: jiaohubizhi-DEB-Package
+          path: packages/*.deb
