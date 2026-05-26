@@ -6,7 +6,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Dependencies
         run: |
@@ -23,7 +23,7 @@ jobs:
           make package THEOS_PACKAGE_SCHEME=rootless
           
       - name: Upload DEB
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: jiaohubizhi-DEB-Package
           path: packages/*.deb
